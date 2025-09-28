@@ -1,0 +1,16 @@
+
+venv/
+__pycache__/
+
+
+.vscode/
+.idea/
+
+
+.DS_Store
+
+20070101_prof.csv
+
+india_argo.csv
+
+data/
