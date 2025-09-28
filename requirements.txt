@@ -1,0 +1,13 @@
+langchain
+langchain-community
+ollama
+streamlit
+pandas
+xarray
+psycopg2-binary
+SQLAlchemy
+chromadb
+sentence-transformers
+plotly
+folium
+lark
