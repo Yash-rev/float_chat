@@ -59,6 +59,7 @@ ollama pull llama3:instruct
 ## 🔧 How to Use the Chatbot
 
 Running the chatbot is a two-step process. First, you ingest your data, then you run the chatbot to ask questions about it.
+Before starting this store the datasets in csv format inside a directiory named "data".
 
 ### Step 1: Data Ingestion (Run Once)
 
