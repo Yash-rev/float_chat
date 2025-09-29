@@ -133,45 +133,49 @@
 # if __name__ == "__main__":
 #     ingest_csv()
 
+import os
 import pandas as pd
 import chromadb
 from sentence_transformers import SentenceTransformer
 
-# --- CONFIGURATION ---
-# IMPORTANT: Make sure this path matches your CSV file's name.
-CSV_FILE_PATH = "20070101_prof.csv" 
+DATA_DIRECTORY = "data"
 CHROMA_DB_PATH = "./chroma_db"
 CHROMA_COLLECTION_NAME = "argo_data_collection"
 
-def ingest_csv():
-    """
-    Reads ARGO data from a CSV and creates high-quality documents and metadata
-    for an effective RAG pipeline.
-    """
-    print(f"Loading data from {CSV_FILE_PATH}...")
-    try:
-        df = pd.read_csv(CSV_FILE_PATH)
-    except FileNotFoundError:
-        print(f"Error: The file {CSV_FILE_PATH} was not found.")
+def ingest_multiple_csv():
+    print(f"Scanning for CSV files in '{DATA_DIRECTORY}' directory...")
+    
+    all_dataframes = []
+    for filename in os.listdir(DATA_DIRECTORY):
+        if filename.endswith(".csv"):
+            filepath = os.path.join(DATA_DIRECTORY, filename)
+            print(f"  - Loading {filename}")
+            try:
+                df = pd.read_csv(filepath)
+                all_dataframes.append(df)
+            except Exception as e:
+                print(f"  > Error reading {filepath}: {e}")
+    
+    if not all_dataframes:
+        print("No CSV files found or loaded. Exiting.")
         return
+        
+    master_df = pd.concat(all_dataframes, ignore_index=True)
+    print(f"\nSuccessfully combined {len(all_dataframes)} files into a dataset with {len(master_df)} rows.")
 
     print("Data loaded. Cleaning and preparing data...")
-    # Define the actual numeric columns from your CSV file.
     numeric_cols = ['longitude', 'latitude', 'pres_adjusted', 'temp_adjusted', 'psal_adjusted']
     for col in numeric_cols:
-        if col in df.columns:
-            # Convert columns to numeric, turning any errors into 'Not a Number' (NaN).
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-    # Fill any remaining missing values so the script doesn't crash.
-    df.fillna("Not Available", inplace=True)
+        if col in master_df.columns:
+            master_df[col] = pd.to_numeric(master_df[col], errors='coerce')
+    master_df.fillna("Not Available", inplace=True)
 
     print("Creating text documents and metadata...")
     documents = []
     metadatas = []
     ids = []
     
-    for index, row in df.iterrows():
-        # Create a natural language sentence from the row's data for better semantic search.
+    for index, row in master_df.iterrows():
         doc_text = (
             f"Measurement from ARGO float platform {row.get('platform_number', 'N/A')}, cycle number {row.get('cycle_number', 'N/A')}. "
             f"Location: Latitude {row.get('latitude', 'N/A')}, Longitude {row.get('longitude', 'N/A')}. "
@@ -181,15 +185,12 @@ def ingest_csv():
         )
         documents.append(doc_text)
         
-        # Create a dictionary of metadata for advanced filtering.
         metadata = {'row_number': index + 1}
-        # Add all key columns to the metadata dictionary.
         for col in ['platform_number', 'cycle_number', 'longitude', 'latitude', 'pres_adjusted', 'temp_adjusted', 'psal_adjusted']:
             if col in row and row[col] != "Not Available":
                 metadata[col] = row[col]
         metadatas.append(metadata)
         
-        # Create a unique ID for each document.
         ids.append(f"row_{index + 1}")
 
     print(f"Created {len(documents)} high-quality text documents.")
@@ -219,4 +220,4 @@ def ingest_csv():
     print("\n--- Data ingestion complete! ---")
 
 if __name__ == "__main__":
-    ingest_csv()
+    ingest_multiple_csv()
